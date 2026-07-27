@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PassVault OS</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Boot Screen -->
+  <div id="boot-screen">
+    <div class="boot-logo">
+      <div class="boot-icon">🔐</div>
+      <h1>PassVault <span>OS</span></h1>
+      <p>Secure Password Intelligence System</p>
+      <div class="boot-bar"><div class="boot-fill"></div></div>
+      <div class="boot-text" id="boot-text">Initializing secure kernel...</div>
+    </div>
+  </div>
+
+  <!-- Desktop -->
+  <div id="desktop" class="hidden">
+    <div class="wallpaper-grid"></div>
+
+    <!-- Taskbar -->
+    <div id="taskbar">
+      <div class="taskbar-left">
+        <div class="os-logo">🔐 PassVault</div>
+      </div>
+      <div class="taskbar-center" id="taskbar-apps">
+        <button class="tb-btn active" onclick="showWindow('checker')">🔍 Checker</button>
+        <button class="tb-btn" onclick="showWindow('generator')">⚡ Generator</button>
+        <button class="tb-btn" onclick="openVault()">🗄️ Vault</button>
+      </div>
+      <div class="taskbar-right">
+        <span id="clock">--:--</span>
+      </div>
+    </div>
+
+    <!-- Window: Password Checker -->
+    <div class="window" id="win-checker">
+      <div class="win-header" onmousedown="dragStart(event,'win-checker')">
+        <span class="win-title">🔍 Password Strength Checker</span>
+        <div class="win-controls">
+          <button class="win-btn min" onclick="minimizeWindow('win-checker')">─</button>
+          <button class="win-btn close" onclick="closeWindow('win-checker')">✕</button>
+        </div>
+      </div>
+      <div class="win-body">
+        <div class="checker-container">
+          <label class="field-label">Enter Your Password</label>
+          <div class="input-wrap">
+            <input type="password" id="pw-input" placeholder="Type password here..." oninput="checkPassword()" autocomplete="off"/>
+            <button class="eye-btn" onclick="toggleVisibility()">👁</button>
+          </div>
+
+          <div class="strength-display" id="strength-display">
+            <div class="strength-label" id="strength-label">Waiting for input...</div>
+            <div class="strength-bar-track">
+              <div class="strength-bar-fill" id="strength-bar"></div>
+            </div>
+            <div class="strength-score" id="strength-score"></div>
+          </div>
+
+          <div class="criteria-grid" id="criteria-grid">
+            <div class="crit" id="crit-len">✗ Min 8 characters</div>
+            <div class="crit" id="crit-upper">✗ Uppercase letter</div>
+            <div class="crit" id="crit-lower">✗ Lowercase letter</div>
+            <div class="crit" id="crit-num">✗ Number</div>
+            <div class="crit" id="crit-sym">✗ Special character</div>
+            <div class="crit" id="crit-long">✗ 16+ characters (bonus)</div>
+          </div>
+
+          <div class="entropy-row" id="entropy-row">
+            <span>Entropy: <b id="entropy-val">0</b> bits</span>
+            <span>Crack Time: <b id="crack-time">—</b></span>
+          </div>
+
+          <button class="save-btn" id="save-checked-btn" onclick="saveCheckedPassword()" style="display:none">💾 Save to Vault</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Window: Password Generator -->
+    <div class="window hidden" id="win-generator">
+      <div class="win-header" onmousedown="dragStart(event,'win-generator')">
+        <span class="win-title">⚡ Password Generator</span>
+        <div class="win-controls">
+          <button class="win-btn min" onclick="minimizeWindow('win-generator')">─</button>
+          <button class="win-btn close" onclick="closeWindow('win-generator')">✕</button>
+        </div>
+      </div>
+      <div class="win-body">
+        <div class="gen-container">
+          <div class="gen-options">
+            <div class="option-row">
+              <label>Password Length: <span id="len-display">16</span></label>
+              <input type="range" id="len-slider" min="6" max="64" value="16" oninput="updateLength()" class="slider"/>
+            </div>
+            <div class="checkbox-row">
+              <label><input type="checkbox" id="opt-upper" checked/> Uppercase (A-Z)</label>
+              <label><input type="checkbox" id="opt-lower" checked/> Lowercase (a-z)</label>
+              <label><input type="checkbox" id="opt-num" checked/> Numbers (0-9)</label>
+              <label><input type="checkbox" id="opt-sym" checked/> Symbols (!@#...)</label>
+              <label><input type="checkbox" id="opt-noamb"/> Exclude ambiguous (0,O,l,1)</label>
+            </div>
+            <div class="count-row">
+              <label>Generate <span id="count-display">5</span> passwords</label>
+              <input type="range" id="count-slider" min="1" max="20" value="5" oninput="updateCount()" class="slider"/>
+            </div>
+          </div>
+
+          <button class="gen-btn" onclick="generatePasswords()">⚡ Generate Passwords</button>
+
+          <div class="gen-list" id="gen-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vault Lock Screen -->
+    <div id="vault-lock" class="overlay hidden">
+      <div class="vault-lock-box">
+        <div class="vault-icon">🗄️</div>
+        <h2>PassVault</h2>
+        <p>Authenticate to access your saved passwords</p>
+        <div class="auth-options">
+          <button class="auth-btn biometric" id="bio-btn" onclick="biometricAuth()">
+            <span class="bio-icon">👆</span>
+            <span>Biometric Auth</span>
+          </button>
+          <div class="or-divider">or</div>
+          <div class="pin-section">
+            <label>Master PIN</label>
+            <input type="password" id="pin-input" maxlength="6" placeholder="Enter 6-digit PIN" oninput="checkPinInput()"/>
+            <button class="pin-submit" onclick="pinAuth()">Unlock →</button>
+          </div>
+        </div>
+        <div class="auth-hint">Default PIN: <b>123456</b></div>
+        <div id="auth-error" class="auth-error hidden">❌ Authentication failed. Try again.</div>
+        <button class="cancel-vault" onclick="closeVaultLock()">✕ Cancel</button>
+      </div>
+    </div>
+
+    <!-- Vault Window -->
+    <div class="window hidden" id="win-vault">
+      <div class="win-header" onmousedown="dragStart(event,'win-vault')">
+        <span class="win-title">🗄️ Password Vault</span>
+        <div class="win-controls">
+          <button class="win-btn" onclick="lockVault()" title="Lock Vault">🔒</button>
+          <button class="win-btn min" onclick="minimizeWindow('win-vault')">─</button>
+          <button class="win-btn close" onclick="closeWindow('win-vault')">✕</button>
+        </div>
+      </div>
+      <div class="win-body">
+        <div class="vault-container">
+          <div class="vault-add-row">
+            <input type="text" id="vault-label" placeholder="Label (e.g. Gmail)" class="vault-input"/>
+            <input type="text" id="vault-pw" placeholder="Password" class="vault-input"/>
+            <button class="vault-add-btn" onclick="addToVault()">+ Add</button>
+          </div>
+          <div class="vault-search-row">
+            <input type="text" id="vault-search" placeholder="🔍 Search saved passwords..." class="vault-input" oninput="filterVault()"/>
+          </div>
+          <div class="vault-list" id="vault-list">
+            <div class="vault-empty">No passwords saved yet. Add some!</div>
+          </div>
+          <div class="vault-footer">
+            <span id="vault-count">0 passwords stored</span>
+            <button class="export-btn" onclick="exportVault()">📤 Export</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end desktop -->
+
+  <script src="app.js"></script>
+</body>
+</html>
